@@ -1,0 +1,9 @@
+[project]
+name = "Agent-IT"
+version = "0.1.0"
+description = "outil réseau"
+authors = [{name="CheckFly"}]
+requires-python = ">=3.13"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
