@@ -11,8 +11,10 @@ from agent_it.common.logger import logger
 app = FastAPI(
     title="Agent_IT Server",
     version="0.1.0"
-    logger.info("API Agent_IT démarrée")
 )
+
+logger.info("API Agent_IT démarrée")
+
 
 @app.middleware("http")
 async def log_requests(request, call_next):
