@@ -6,12 +6,30 @@ from agent_it.server.models import ActivityEvent
 from agent_it.common.constants import EVENT_NAMES
 from agent_it.common.logger import logger
 
-logger.info("API Agent_IT démarrée")
+
 
 app = FastAPI(
     title="Agent_IT Server",
     version="0.1.0"
+    logger.info("API Agent_IT démarrée")
 )
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+
+    logger.info(
+        f"{request.client.host} "
+        f"{request.method} "
+        f"{request.url.path}"
+    )
+
+    response = await call_next(request)
+
+    logger.info(
+        f"STATUS={response.status_code}"
+    )
+
+    return response
 
 @app.get("/health")
 async def health():
@@ -120,19 +138,3 @@ async def receive_event(event: ActivityEvent):
     finally:
         db.close()
         
-@app.middleware("http")
-async def log_requests(request, call_next):
-
-    logger.info(
-        f"{request.client.host} "
-        f"{request.method} "
-        f"{request.url.path}"
-    )
-
-    response = await call_next(request)
-
-    logger.info(
-        f"STATUS={response.status_code}"
-    )
-
-    return response

@@ -30,6 +30,7 @@ Group=agent_it
 WorkingDirectory=/opt/agent_it
 
 Environment="PYTHONPATH=/opt/agent_it/Agent-IT/src"
+EnvironmentFile=/etc/agent_it.conf
 
 ExecStart=/home/envs/agent_it/bin/uvicorn \
     agent_it.server.api:app \
@@ -41,6 +42,16 @@ RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
+
+## creation fichier de config
+`sudo nano /etc/agent_it.conf`
+`sudo chown root:agent_it /etc/agent_it.conf`
+`sudo chmod 640 /etc/agent_it.conf`
+
+DB_HOST=localhost
+DB_NAME="DATABASE_NAME"
+DB_USER="USER_DB"
+DB_PASSWORD=xxxxxxxx
 
 ### command
 
