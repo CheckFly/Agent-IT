@@ -80,6 +80,7 @@ async def receive_event(event: ActivityEvent):
             """),
             {
                 "hostname": event.hostname,
+                "computer_uuid": event.computer_uuid,
                 "ip_address": event.ip_address,
                 "event_id": event.event_id,
                 "event_name": event_name,
