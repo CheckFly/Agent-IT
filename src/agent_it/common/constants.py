@@ -1,0 +1,6 @@
+EVENT_NAMES = {
+    6005: "BOOT",
+    6006: "SHUTDOWN",
+    6008: "CRASH",
+    1074: "RESTART"
+}
