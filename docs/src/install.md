@@ -3,17 +3,17 @@
 
 ## Creation utilisateur agent_it
 
-'sudo useradd -m agent_it'
-'mkdir /opt/agent_it'
-'sudo chown -R agent_it:agent_it /opt/agent_it'
-'sudo -u agent_it git clone <https://github.com/CheckFly/Agent-IT> /opt/agent_it'
+`sudo useradd -m agent_it`
+`mkdir /opt/agent_it`
+`sudo chown -R agent_it:agent_it /opt/agent_it`
+`sudo -u agent_it git clone <https://github.com/CheckFly/Agent-IT> /opt/agent_it`
 
 ## Environnement python
 
-'python3 -m venv /home/envs/agent_it'
-'source /home/envs/agent_it/bin/activate'
-'cd /opt/agent_it/Agent-IT'
-'pip install -r requirements'
+`python3 -m venv /home/envs/agent_it`
+`source /home/envs/agent_it/bin/activate`
+`cd /opt/agent_it/Agent-IT`
+`pip install -r requirements`
 
 ## Creation service
 
@@ -44,7 +44,7 @@ WantedBy=multi-user.target
 
 ### command
 
-'sudo systemctl daemon-reload'
-'sudo systemctl enable agent_it'
-'sudo systemctl start agent_it'
-'journalctl -u agent_it -f'
+`sudo systemctl daemon-reload`
+`sudo systemctl enable agent_it`
+`sudo systemctl start agent_it`
+`journalctl -u agent_it -f`
