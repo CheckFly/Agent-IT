@@ -1,79 +1,137 @@
+from datetime import datetime
+import xml.etree.ElementTree as ET
+
 import win32evtlog
-import win32evtlogutil
-import json
-from pathlib import Path
 
-STATE_FILE = Path("state.json")
+from agent_it.common.constants import EVENT_NAMES
+from agent_it.common.logger import logger
 
 
-def load_state():
-    if STATE_FILE.exists():
-        return json.loads(STATE_FILE.read_text())
-    return {"last_record_id": 0}
+LOG_NAME = "System"
+
+WATCHED_EVENTS = set(EVENT_NAMES.keys())
 
 
-def save_state(state):
-    STATE_FILE.write_text(json.dumps(state))
+def parse_xml(xml):
+
+    return ET.fromstring(xml)
 
 
-def read_events():
+def extract_event_id(xml):
 
-    state = load_state()
-    last_record = state["last_record_id"]
+    root = parse_xml(xml)
 
-    query = "*[System[(EventID=6005 or EventID=6006 or EventID=6008)]]"
+    return int(
+        root.find(
+            ".//{*}EventID"
+        ).text
+    )
+
+
+def extract_record_id(xml):
+
+    root = parse_xml(xml)
+
+    return int(
+        root.find(
+            ".//{*}EventRecordID"
+        ).text
+    )
+
+
+def extract_timestamp(xml):
+
+    root = parse_xml(xml)
+
+    node = root.find(
+        ".//{*}TimeCreated"
+    )
+
+    timestamp = node.attrib["SystemTime"]
+
+    return datetime.fromisoformat(
+        timestamp.replace("Z", "+00:00")
+    )
+
+
+def get_new_events(last_record_id: int):
+
+    event_filter = " or ".join(
+        f"EventID={event_id}"
+        for event_id in WATCHED_EVENTS
+    )
+
+    query = (
+        f"*[System[({event_filter})]]"
+    )
+
+    logger.info(
+        f"Recherche événements après RecordId={last_record_id}"
+    )
 
     handle = win32evtlog.EvtQuery(
-        "System",
-        win32evtlog.EvtQueryForwardDirection,
+        LOG_NAME,
+        win32evtlog.EvtQueryReverseDirection,
         query
     )
 
-    newest_record = last_record
+    events = []
 
     while True:
 
-        events = win32evtlog.EvtNext(handle, 10)
+        try:
 
-        if not events:
-            break
-
-        for event in events:
-
-            values = win32evtlog.EvtRender(
-                event,
-                win32evtlog.EvtRenderEventValues
+            records = win32evtlog.EvtNext(
+                handle,
+                50
             )
 
-            event_id = values[win32evtlog.EvtSystemEventID]
-            record_id = values[win32evtlog.EvtSystemEventRecordId]
-            timestamp = values[win32evtlog.EvtSystemTimeCreated]
+        except Exception:
+            break
 
-            if record_id <= last_record:
-                continue
+        if not records:
+            break
 
-            if event_id == 6005:
-                event_type = "boot"
+        for record in records:
 
-            elif event_id == 6006:
-                event_type = "shutdown"
+            xml = win32evtlog.EvtRender(
+                record,
+                win32evtlog.EvtRenderEventXml
+            )
 
-            elif event_id == 6008:
-                event_type = "crash"
+            event_id = extract_event_id(xml)
 
-            else:
-                continue
+            record_id = extract_record_id(xml)
 
-            event_data = {
-                "event": event_type,
-                "record_id": record_id,
-                "timestamp": str(timestamp)
-            }
+            # Comme on lit du plus récent vers le plus ancien,
+            # dès qu'on atteint le dernier événement déjà envoyé,
+            # on peut arrêter la recherche.
+            if record_id <= last_record_id:
 
-            print(event_data)
+                events.sort(
+                    key=lambda e: e["record_id"]
+                )
 
-            if record_id > newest_record:
-                newest_record = record_id
+                logger.info(
+                    f"{len(events)} nouvel(s) événement(s) trouvé(s)"
+                )
 
-    state["last_record_id"] = newest_record
-    save_state(state)
+                return events
+
+            events.append(
+                {
+                    "record_id": record_id,
+                    "event_id": event_id,
+                    "event_timestamp": extract_timestamp(xml)
+                }
+            )
+
+    events.sort(
+        key=lambda e: e["record_id"]
+    )
+
+    logger.info(
+        f"{len(events)} nouvel(s) événement(s) trouvé(s)"
+    )
+
+    return events

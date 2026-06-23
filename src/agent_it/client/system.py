@@ -1,34 +1,54 @@
 import socket
-import time
 import subprocess
 
+
+def get_hostname():
+
+    return socket.gethostname()
+
+
+def get_ip_address():
+
+    try:
+
+        hostname = socket.gethostname()
+
+        return socket.gethostbyname(
+            hostname
+        )
+
+    except Exception:
+
+        return "0.0.0.0"
 
 
 def get_computer_uuid():
 
-    result = subprocess.run(
-        ["wmic", "csproduct", "get", "uuid"],
-        capture_output=True,
-        text=True
-    )
+    try:
 
-    lines = [
-        line.strip()
-        for line in result.stdout.splitlines()
-        if line.strip()
-    ]
+        result = subprocess.run(
+            [
+                "wmic",
+                "csproduct",
+                "get",
+                "uuid"
+            ],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
 
-    return lines[1]
+        lines = [
+            line.strip()
+            for line in result.stdout.splitlines()
+            if line.strip()
+        ]
 
+        if len(lines) >= 2:
 
-def get_system_info():
+            return lines[1]
 
-    hostname = socket.gethostname()
-    ip = socket.gethostbyname(hostname)
+    except Exception:
+        pass
 
-    return {
-        "hostname": hostname,
-        "ip": ip,
-        "status": "online",
-        "timestamp": int(time.time())
-    }
+    return "UNKNOWN"

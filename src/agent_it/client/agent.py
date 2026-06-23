@@ -1,26 +1,53 @@
-import time
 from agent_it.client.eventlog import get_new_events
 from agent_it.client.sender import send_event
-from agent_it.client.state import get_last_record, save_last_record
+from agent_it.client.state import (
+    get_last_record,
+    save_last_record
+)
+
 from agent_it.common.logger import logger
-from agent_it.common.config import POLL_INTERVAL
 
 
-def start_agent():
-    """
-    Démarre l'agent de monitoring.
-    Envoie périodiquement l'état de la machine au serveur.
-    """
+def main():
 
-    logger.info("Agent démarré")
+    logger.info("Agent_IT démarré")
 
-    system_info = get_system_info()
+    last_record = get_last_record()
 
-    while True:
-        try:
-            publish_status(system_info)
-            logger.info("Heartbeat envoyé")
-        except Exception as e:
-            logger.error(f"Erreur envoi heartbeat : {e}")
+    logger.info(
+        f"Dernier RecordId envoyé : {last_record}"
+    )
 
-        time.sleep(HEARTBEAT_INTERVAL)
+    events = get_new_events(last_record)
+
+    logger.info(
+        f"{len(events)} événement(s) trouvé(s)"
+    )
+
+    for event in events:
+
+        logger.info(
+            f"Traitement EventId={event['event_id']} "
+            f"RecordId={event['record_id']}"
+        )
+
+        if send_event(event):
+
+            save_last_record(
+                event["record_id"]
+            )
+
+            logger.info(
+                f"RecordId {event['record_id']} sauvegardé"
+            )
+
+        else:
+
+            logger.error(
+                f"Echec envoi RecordId={event['record_id']}"
+            )
+
+            # on s'arrête pour réessayer plus tard
+            break
+
+    logger.info("Agent_IT terminé")
